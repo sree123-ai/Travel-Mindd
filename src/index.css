@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Nunito', sans-serif;
+    color: #4A2412;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Fredoka', 'Nunito', sans-serif;
+  }
+}
+
+/* 3D button effect and journal aesthetic */
+.journal-panel {
+  background-color: rgba(255, 248, 230, 0.94);
+  border: 3.5px solid #7A421F;
+  border-radius: 1.5rem;
+  box-shadow: 0 12px 28px -4px rgba(74, 36, 18, 0.35), 0 4px 10px rgba(74, 36, 18, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.journal-card {
+  border-radius: 1.15rem;
+  border-width: 2.5px;
+  box-shadow: 0 6px 14px -2px rgba(74, 36, 18, 0.22);
+}
+
+.btn-3d {
+  position: relative;
+  transition: all 0.12s ease-in-out;
+  border-bottom-width: 4px;
+  font-weight: 700;
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px);
+}
+
+.btn-3d:active {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+/* Custom scrollbar for warm paper style */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(245, 230, 200, 0.7);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #A06235;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 248, 230, 0.8);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #7A421F;
+}
