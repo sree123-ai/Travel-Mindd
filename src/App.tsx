@@ -8,10 +8,10 @@ import { AIAnalysis } from './components/AIAnalysis';
 import { DestinationView } from './components/DestinationView';
 import { TripContext, VerifiedPlace } from './types/travel';
 import { searchVerifiedDestinations, VERIFIED_PLACES } from './data/locations';
-import { generateContextualPacking, generateContextualItinerary } from './services/travelEngines';
+import { generateContextualPacking, generateContextualItinerary, generateContextualWeather, generateAllergyAwareFoodRecommendations } from './services/travelEngines';
 import confetti from 'canvas-confetti';
 
-const TOTAL_QUESTIONNAIRE_STEPS = 20;
+const TOTAL_QUESTIONNAIRE_STEPS = 21;
 
 export default function App() {
   // App navigation view state
@@ -59,6 +59,9 @@ export default function App() {
       // Health, food & climate
       health_accessibility: ['No specific requirement'],
       food_preferences: ['Vegetarian'],
+      allergies: ['Peanuts'],
+      custom_allergies: [],
+      customAllergies: [],
       selected_climate: 'Pleasant',
       activities: ['Photography', 'Temple Visit', 'Local Food'],
       places_to_avoid: ['None'],
@@ -111,13 +114,6 @@ export default function App() {
     } else if (allDistrictPlaces.length > 0) {
       finalDestination = allDistrictPlaces[0];
       isAlternative = true;
-    } else {
-      // Strict fallback: if no verified place in this district, find from same state
-      const statePlaces = VERIFIED_PLACES.filter(p => p.state.toLowerCase() === tripContext.selected_state.toLowerCase());
-      if (statePlaces.length > 0) {
-        finalDestination = statePlaces[0];
-        isAlternative = true;
-      }
     }
 
     const nextTripContext: TripContext = {
@@ -127,9 +123,11 @@ export default function App() {
       is_related_alternative: isAlternative
     };
 
-    // Synthesize context-aware packing & itinerary
+    // Synthesize context-aware packing, itinerary, dynamic weather & allergy food recommendations
+    nextTripContext.live_weather = generateContextualWeather(nextTripContext);
     nextTripContext.packing_list = generateContextualPacking(nextTripContext);
     nextTripContext.itinerary = generateContextualItinerary(nextTripContext);
+    nextTripContext.allergy_food_recommendations = generateAllergyAwareFoodRecommendations(nextTripContext);
 
     setTripContext(nextTripContext);
   };

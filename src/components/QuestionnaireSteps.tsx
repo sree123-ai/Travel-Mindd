@@ -8,7 +8,12 @@ import {
   CheckCircle2, 
   HelpCircle,
   Search,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  X,
+  Utensils,
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { TripContext, StateInfo } from '../types/travel';
 import { OptionCard } from './OptionCard';
@@ -35,6 +40,7 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
   const t = translations[tripContext.preferred_language] || translations.en;
   const [searchTerm, setSearchTerm] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [customAllergyInput, setCustomAllergyInput] = useState('');
 
   // Clear errors on step switch
   React.useEffect(() => {
@@ -78,9 +84,12 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
     switch (currentStep) {
       // Step 1: State Selection
       case 1: {
-        const filteredStates = INDIAN_STATES.filter(s => 
-          s.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const trimmedTerm = searchTerm.trim().toLowerCase();
+        const filteredStates = trimmedTerm 
+          ? INDIAN_STATES.filter(s => s.name.toLowerCase().includes(trimmedTerm))
+          : INDIAN_STATES;
+        const hasSearchQuery = trimmedTerm.length > 0;
+        const noMatch = hasSearchQuery && filteredStates.length === 0;
 
         return (
           <div>
@@ -89,56 +98,102 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
                 WHERE DO YOU WANT TO TRAVEL?
               </h2>
               <p className="text-sm font-semibold text-[#7A421F] mt-1">
-                Select an Indian State or Union Territory using the interactive cards below
+                Select from visual cards below or search and type your verified state
               </p>
             </div>
 
-            {/* Search filter */}
-            <div className="relative mb-5 max-w-md mx-auto">
-              <Search className="w-5 h-5 absolute left-3.5 top-3 text-[#7A421F]/60" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search state (e.g., Tamil Nadu, Assam, Kerala)..."
-                className="w-full bg-white border-2 border-[#7A421F] rounded-2xl pl-11 pr-4 py-2.5 text-sm font-bold text-[#4A2412] focus:ring-2 focus:ring-[#F28A20] focus:outline-none"
-              />
+            {/* Section B: Search / Type State Facility */}
+            <div className="mb-6 max-w-lg mx-auto bg-amber-100/90 border-2 border-[#7A421F] p-4 rounded-2xl shadow-xs">
+              <label className="block text-xs font-black uppercase tracking-wider text-[#7A421F] mb-1.5 flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-[#F28A20]" />
+                [ Search State ]
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Type state name (e.g., Rajasthan, Tamil Nadu, Kerala)..."
+                  className="w-full bg-white border-2 border-[#7A421F] rounded-xl pl-10 pr-9 py-2.5 text-sm font-bold text-[#4A2412] focus:ring-2 focus:ring-[#F28A20] focus:outline-none placeholder:font-medium placeholder:text-[#7A421F]/50"
+                />
+                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-[#7A421F]/60" />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-3 text-xs font-bold text-[#7A421F] hover:text-[#4A2412] px-1.5 py-0.5 bg-amber-200 rounded-md"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Exact unverified match warning as mandated by prompt Section B */}
+              {noMatch && (
+                <div className="mt-3 p-3 rounded-xl bg-red-100 border-2 border-red-400 text-red-900 text-xs font-extrabold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <div>
+                    <span className="block font-black uppercase text-red-800">Location not found in verified data.</span>
+                    <span className="font-semibold text-red-700">Please choose or type a verified Indian State from the catalog below.</span>
+                  </div>
+                </div>
+              )}
+
+              {hasSearchQuery && !noMatch && (
+                <div className="mt-2 text-xs font-bold text-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Showing {filteredStates.length} verified state {filteredStates.length === 1 ? 'match' : 'matches'}
+                </div>
+              )}
             </div>
 
             {/* AI Suggest Tile */}
-            <div className="mb-4">
-              <OptionCard
-                id="ai-state"
-                label="AI CAN SUGGEST A STATE FOR ME"
-                subLabel="Let TravelMind AI determine the most suitable destination state based on climate & activities"
-                iconName="ai"
-                selected={tripContext.selected_state === 'Tamil Nadu' && tripContext.destination_mode === 'ai_suggest'}
-                onClick={() => {
-                  updateTripContext({
-                    selected_state: 'Tamil Nadu',
-                    selected_district: 'Madurai',
-                    destination_mode: 'ai_suggest'
-                  });
-                }}
-                accentColor="bg-amber-200"
-                tag="AI RECOMMENDED"
-              />
-            </div>
-
-            {/* States Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto pr-1">
-              {filteredStates.map((st) => (
+            {!hasSearchQuery && (
+              <div className="mb-4">
                 <OptionCard
-                  key={st.name}
-                  id={st.name}
-                  label={st.name}
-                  subLabel={`${st.districts.length} Verified Districts • ${st.type}`}
-                  iconName="temple"
-                  selected={tripContext.selected_state === st.name}
-                  onClick={() => handleStateSelect(st.name)}
-                  accentColor="bg-emerald-100"
+                  id="ai-state"
+                  label="AI CAN SUGGEST A STATE FOR ME"
+                  subLabel="Let TravelMind AI determine the most suitable destination state based on climate & activities"
+                  iconName="ai"
+                  selected={tripContext.selected_state === 'Tamil Nadu' && tripContext.destination_mode === 'ai_suggest'}
+                  onClick={() => {
+                    updateTripContext({
+                      selected_state: 'Tamil Nadu',
+                      selected_district: 'Madurai',
+                      destination_mode: 'ai_suggest'
+                    });
+                  }}
+                  accentColor="bg-amber-200"
+                  tag="AI RECOMMENDED"
                 />
-              ))}
+              </div>
+            )}
+
+            {/* Visual States Cards Grid - Always Available */}
+            <div>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-xs font-black uppercase tracking-wider text-[#7A421F]">
+                  {hasSearchQuery ? 'Verified Matching States' : 'All Verified States & Territories'}
+                </span>
+                <span className="text-xs font-bold text-[#7A421F]">
+                  {filteredStates.length} Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                {filteredStates.map((st) => (
+                  <OptionCard
+                    key={st.name}
+                    id={st.name}
+                    label={st.name}
+                    subLabel={`${st.districts.length} Verified Districts • ${st.type}`}
+                    iconName="temple"
+                    selected={tripContext.selected_state === st.name}
+                    onClick={() => handleStateSelect(st.name)}
+                    accentColor={tripContext.selected_state === st.name ? "bg-emerald-200" : "bg-emerald-50"}
+                    tag={hasSearchQuery ? "VERIFIED MATCH" : undefined}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -147,9 +202,12 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
       // Step 2: Dynamic District Selection
       case 2: {
         const districts = currentStateObj.districts;
-        const filteredDistricts = districts.filter(d => 
-          d.toLowerCase().includes(searchTerm.toLowerCase())
-        );
+        const trimmedTerm = searchTerm.trim().toLowerCase();
+        const filteredDistricts = trimmedTerm
+          ? districts.filter(d => d.toLowerCase().includes(trimmedTerm))
+          : districts;
+        const hasSearchQuery = trimmedTerm.length > 0;
+        const noMatch = hasSearchQuery && filteredDistricts.length === 0;
 
         return (
           <div>
@@ -162,61 +220,107 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
                 SELECT A DISTRICT IN {tripContext.selected_state.toUpperCase()}
               </h2>
               <p className="text-sm font-semibold text-[#7A421F] mt-1">
-                Dynamic verified district catalog for {tripContext.selected_state}
+                Select from visual cards below or search and type your verified district
               </p>
             </div>
 
-            {/* Search district */}
-            <div className="relative mb-5 max-w-md mx-auto">
-              <Search className="w-5 h-5 absolute left-3.5 top-3 text-[#7A421F]/60" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={`Search district in ${tripContext.selected_state}...`}
-                className="w-full bg-white border-2 border-[#7A421F] rounded-2xl pl-11 pr-4 py-2.5 text-sm font-bold text-[#4A2412] focus:ring-2 focus:ring-[#F28A20] focus:outline-none"
-              />
+            {/* Section B: Search / Type District Facility */}
+            <div className="mb-6 max-w-lg mx-auto bg-amber-100/90 border-2 border-[#7A421F] p-4 rounded-2xl shadow-xs">
+              <label className="block text-xs font-black uppercase tracking-wider text-[#7A421F] mb-1.5 flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 text-[#F28A20]" />
+                [ Search District ]
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={`Type district name in ${tripContext.selected_state} (e.g., Madurai, Jaipur)...`}
+                  className="w-full bg-white border-2 border-[#7A421F] rounded-xl pl-10 pr-9 py-2.5 text-sm font-bold text-[#4A2412] focus:ring-2 focus:ring-[#F28A20] focus:outline-none placeholder:font-medium placeholder:text-[#7A421F]/50"
+                />
+                <Search className="w-4 h-4 absolute left-3.5 top-3.5 text-[#7A421F]/60" />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-3 text-xs font-bold text-[#7A421F] hover:text-[#4A2412] px-1.5 py-0.5 bg-amber-200 rounded-md"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {/* Exact unverified match warning as mandated by prompt Section B */}
+              {noMatch && (
+                <div className="mt-3 p-3 rounded-xl bg-red-100 border-2 border-red-400 text-red-900 text-xs font-extrabold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <div>
+                    <span className="block font-black uppercase text-red-800">Location not found in verified data.</span>
+                    <span className="font-semibold text-red-700">Please choose or type a verified district belonging to {tripContext.selected_state}.</span>
+                  </div>
+                </div>
+              )}
+
+              {hasSearchQuery && !noMatch && (
+                <div className="mt-2 text-xs font-bold text-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Showing {filteredDistricts.length} verified district {filteredDistricts.length === 1 ? 'match' : 'matches'}
+                </div>
+              )}
             </div>
 
             {/* AI Choose District Option */}
-            <div className="mb-4">
-              <OptionCard
-                id="ai-district"
-                label={`AI CAN CHOOSE A DISTRICT IN ${tripContext.selected_state.toUpperCase()}`}
-                subLabel="AI evaluates seasonal climate, crowd density, and top-rated highlights"
-                iconName="ai"
-                selected={tripContext.destination_mode === 'ai_suggest'}
-                onClick={() => {
-                  updateTripContext({
-                    selected_district: districts[0],
-                    destination_mode: 'ai_suggest'
-                  });
-                }}
-                accentColor="bg-amber-200"
-                tag="DYNAMIC AI"
-              />
-            </div>
-
-            {/* District cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto pr-1">
-              {filteredDistricts.map((dist) => (
+            {!hasSearchQuery && (
+              <div className="mb-4">
                 <OptionCard
-                  key={dist}
-                  id={dist}
-                  label={dist}
-                  subLabel={`District in ${tripContext.selected_state}`}
-                  iconName="nature"
-                  selected={tripContext.selected_district === dist}
+                  id="ai-district"
+                  label={`AI CAN CHOOSE A DISTRICT IN ${tripContext.selected_state.toUpperCase()}`}
+                  subLabel="AI evaluates seasonal climate, crowd density, and top-rated highlights"
+                  iconName="ai"
+                  selected={tripContext.destination_mode === 'ai_suggest'}
                   onClick={() => {
-                    updateTripContext({ 
-                      selected_district: dist,
-                      selected_destination_input: '',
-                      verified_destination: null 
+                    updateTripContext({
+                      selected_district: districts[0],
+                      destination_mode: 'ai_suggest'
                     });
                   }}
-                  accentColor="bg-sky-100"
+                  accentColor="bg-amber-200"
+                  tag="DYNAMIC AI"
                 />
-              ))}
+              </div>
+            )}
+
+            {/* Visual District cards - Always Available */}
+            <div>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-xs font-black uppercase tracking-wider text-[#7A421F]">
+                  {hasSearchQuery ? `Verified Matching Districts in ${tripContext.selected_state}` : `Verified Districts in ${tripContext.selected_state}`}
+                </span>
+                <span className="text-xs font-bold text-[#7A421F]">
+                  {filteredDistricts.length} Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[380px] overflow-y-auto pr-1">
+                {filteredDistricts.map((dist) => (
+                  <OptionCard
+                    key={dist}
+                    id={dist}
+                    label={dist}
+                    subLabel={`District in ${tripContext.selected_state}`}
+                    iconName="nature"
+                    selected={tripContext.selected_district === dist}
+                    onClick={() => {
+                      updateTripContext({ 
+                        selected_district: dist,
+                        selected_destination_input: '',
+                        verified_destination: null 
+                      });
+                    }}
+                    accentColor={tripContext.selected_district === dist ? "bg-sky-200" : "bg-sky-50"}
+                    tag={hasSearchQuery ? "VERIFIED MATCH" : undefined}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         );
@@ -641,18 +745,18 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 12: Food & Allergy
+      // Step 12: Food Preferences
       case 12: {
         const foods = [
-          { id: 'No restrictions', label: 'No restrictions' },
-          { id: 'Vegetarian', label: 'Pure Vegetarian' },
-          { id: 'Vegan', label: 'Vegan' },
-          { id: 'Non-Vegetarian', label: 'Non-Vegetarian' },
-          { id: 'Dairy-free', label: 'Dairy-free' },
-          { id: 'Gluten-free', label: 'Gluten-free' },
-          { id: 'Avoid Nuts', label: 'Avoid Peanut / Tree Nuts' },
-          { id: 'Avoid Spicy Food', label: 'Avoid Spicy Food' },
-          { id: 'Avoid Seafood', label: 'Avoid Seafood' }
+          { id: 'No restrictions', label: 'No restrictions (All cuisines)' },
+          { id: 'Vegetarian', label: 'Pure Vegetarian (No meat/fish/egg)' },
+          { id: 'Vegan', label: 'Vegan (100% plant-based, dairy-free)' },
+          { id: 'Non-Vegetarian', label: 'Non-Vegetarian (Meat & seafood allowed)' },
+          { id: 'Eggetarian', label: 'Eggetarian (Vegetarian with eggs)' },
+          { id: 'Jain / Sattvic', label: 'Jain / Sattvic (No onion, garlic, roots)' },
+          { id: 'Halal Preferred', label: 'Halal Preferred' },
+          { id: 'South Indian Traditional', label: 'South Indian Traditional (Thali & Meals)' },
+          { id: 'Avoid Spicy Food', label: 'Mild / Low Spice Preference' }
         ];
 
         const toggleFood = (f: string) => {
@@ -671,10 +775,10 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
           <div>
             <div className="text-center mb-6">
               <h2 className="text-2xl sm:text-3xl font-black text-[#4A2412]">
-                FOOD & ALLERGY PREFERENCES
+                FOOD & DIETARY PREFERENCES
               </h2>
               <p className="text-sm font-semibold text-[#7A421F] mt-1">
-                Shapes restaurant recommendations, culinary precautions & packing
+                Shapes restaurant cuisine types, thali styles & meal planning in {tripContext.selected_district}
               </p>
             </div>
 
@@ -695,8 +799,206 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 13: Climate
+      // Step 13: Dedicated ALLERGIES Page
       case 13: {
+        const commonAllergies = [
+          { id: 'Peanuts', label: 'Peanuts', emoji: '🥜', sub: 'Verkadalai / Moongphali & peanut oil' },
+          { id: 'Tree Nuts', label: 'Tree Nuts', emoji: '🌰', sub: 'Cashews, almonds, walnuts, pistas' },
+          { id: 'Milk / Dairy', label: 'Milk / Dairy', emoji: '🥛', sub: 'Milk, ghee, butter, paneer, curd' },
+          { id: 'Egg', label: 'Egg', emoji: '🥚', sub: 'Direct eggs, scrambled kothu, baked goods' },
+          { id: 'Fish', label: 'Fish', emoji: '🐟', sub: 'Freshwater & sea fish curries/fries' },
+          { id: 'Shellfish', label: 'Shellfish', emoji: '🦐', sub: 'Prawns, crab, shrimp, lobster' },
+          { id: 'Soy', label: 'Soy', emoji: '🌱', sub: 'Soy sauce, soya chaap, tofu' },
+          { id: 'Wheat / Gluten', label: 'Wheat / Gluten', emoji: '🌾', sub: 'Maida parotta, rava, wheat roti' },
+          { id: 'Sesame', label: 'Sesame', emoji: '🌾', sub: 'Til / Ellu & cold-pressed sesame oil' },
+          { id: 'Other', label: 'Other Allergies', emoji: '⚠️', sub: 'Declare in custom allergies below' },
+          { id: 'No Known Allergies', label: 'No Known Allergies', emoji: '✅', sub: 'No dietary restrictions or allergens' }
+        ];
+
+        const toggleAllergy = (allergyId: string) => {
+          let current = tripContext.allergies || [];
+          if (allergyId === 'No Known Allergies') {
+            current = ['No Known Allergies'];
+            updateTripContext({
+              allergies: current,
+              custom_allergies: [],
+              customAllergies: []
+            });
+            return;
+          }
+
+          current = current.filter(x => x !== 'No Known Allergies');
+          if (current.includes(allergyId)) {
+            current = current.filter(x => x !== allergyId);
+          } else {
+            current = [...current, allergyId];
+          }
+
+          if (current.length === 0 && (!tripContext.custom_allergies || tripContext.custom_allergies.length === 0)) {
+            current = ['No Known Allergies'];
+          }
+
+          updateTripContext({ allergies: current });
+        };
+
+        const handleAddCustomAllergy = (e?: React.FormEvent) => {
+          if (e) e.preventDefault();
+          const trimmed = customAllergyInput.trim();
+          if (!trimmed) return;
+
+          const existingCustom = tripContext.custom_allergies || [];
+          if (!existingCustom.includes(trimmed)) {
+            const nextCustom = [...existingCustom, trimmed];
+            const nextAllergies = (tripContext.allergies || []).filter(a => a !== 'No Known Allergies');
+            updateTripContext({
+              custom_allergies: nextCustom,
+              customAllergies: nextCustom,
+              allergies: nextAllergies.length > 0 ? nextAllergies : (nextAllergies.length === 0 && nextCustom.length > 0 ? ['Custom Allergies Declared'] : nextAllergies)
+            });
+          }
+          setCustomAllergyInput('');
+        };
+
+        const handleRemoveCustomAllergy = (toRemove: string) => {
+          const nextCustom = (tripContext.custom_allergies || []).filter(a => a !== toRemove);
+          const nextAllergies = (tripContext.allergies || []).filter(a => a !== 'No Known Allergies');
+          const finalAllergies = (nextAllergies.length === 0 && nextCustom.length === 0) ? ['No Known Allergies'] : nextAllergies;
+          updateTripContext({
+            custom_allergies: nextCustom,
+            customAllergies: nextCustom,
+            allergies: finalAllergies
+          });
+        };
+
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-800 border border-red-300 text-xs font-black uppercase tracking-wider mb-2">
+                <ShieldAlert className="w-4 h-4 text-red-600" />
+                Dedicated Dietary Safety Step
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#4A2412]">
+                ALLERGIES
+              </h2>
+              <p className="text-sm font-semibold text-[#7A421F] mt-1 max-w-2xl mx-auto">
+                Select your food allergies or declare custom dietary sensitivities. Travel planning constraints only — strictly not medical advice.
+              </p>
+            </div>
+
+            {/* Selectable Common Allergies Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-w-4xl mx-auto">
+              {commonAllergies.map((item) => (
+                <OptionCard
+                  key={item.id}
+                  id={item.id}
+                  label={item.label}
+                  subLabel={item.sub}
+                  emoji={item.emoji}
+                  selected={tripContext.allergies?.includes(item.id)}
+                  onClick={() => toggleAllergy(item.id)}
+                  accentColor={item.id === 'No Known Allergies' ? 'bg-emerald-100' : 'bg-red-50'}
+                />
+              ))}
+            </div>
+
+            {/* [ Add Custom Allergy ] Section */}
+            <div className="max-w-2xl mx-auto p-4 sm:p-5 rounded-2xl bg-white/90 border-2 border-[#7A421F] shadow-sm">
+              <label className="block text-xs font-black uppercase tracking-wider text-[#7A421F] mb-1.5 flex items-center gap-1.5">
+                <Plus className="w-4 h-4 text-[#F28A20]" />
+                [ Add Custom Allergy ]
+              </label>
+              <form onSubmit={handleAddCustomAllergy} className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={customAllergyInput}
+                  onChange={(e) => setCustomAllergyInput(e.target.value)}
+                  placeholder="e.g. Banana allergy, Mustard allergy, Mushroom..."
+                  className="flex-1 px-4 py-2.5 rounded-xl border-2 border-[#7A421F]/60 bg-amber-50/50 text-[#4A2412] font-semibold text-sm focus:outline-hidden focus:border-[#F28A20] focus:ring-2 focus:ring-[#F28A20]/20"
+                />
+                <button
+                  type="submit"
+                  disabled={!customAllergyInput.trim()}
+                  className="px-5 py-2.5 rounded-xl bg-[#F28A20] text-white border-2 border-[#4A2412] font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 btn-3d shadow-xs hover:bg-[#dd7917]"
+                >
+                  <Plus className="w-4 h-4" />
+                  Save Allergy
+                </button>
+              </form>
+
+              {/* Display Custom Allergies Declared */}
+              {tripContext.custom_allergies && tripContext.custom_allergies.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-[#7A421F]/20">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#7A421F] block mb-1.5">
+                    Your Declared Custom Allergies:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {tripContext.custom_allergies.map((ca, i) => (
+                      <span
+                        key={i}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-100 text-red-900 border border-red-400 font-bold text-xs shadow-2xs"
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
+                        {ca}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCustomAllergy(ca)}
+                          className="hover:bg-red-200 rounded-full p-0.5 transition-colors"
+                          title="Remove custom allergy"
+                        >
+                          <X className="w-3.5 h-3.5 text-red-700" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Dedicated ALLERGY PRECAUTIONS Section */}
+            <div className="max-w-3xl mx-auto p-5 rounded-2xl bg-amber-50/95 border-[2.5px] border-[#7A421F] shadow-md space-y-3">
+              <div className="flex items-center gap-2 border-b border-[#7A421F]/20 pb-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                <h3 className="text-base font-black text-[#4A2412] uppercase tracking-wide">
+                  ALLERGY PRECAUTIONS
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm font-semibold text-[#4A2412]">
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-white/80 border border-[#7A421F]/30">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Check ingredients:</strong> Always verify exact ingredients with servers or kitchen chefs prior to eating.</span>
+                </div>
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-white/80 border border-[#7A421F]/30">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Inform restaurant staff:</strong> Clearly state your specific allergy when ordering, requesting dishes cooked separately.</span>
+                </div>
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-white/80 border border-[#7A421F]/30">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span><strong>Avoid uncertain ingredients:</strong> Avoid mixed street gravies, secret spice powders, or dishes with unverified nut pastes.</span>
+                </div>
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-white/80 border border-[#7A421F]/30">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span><strong>Inquire on cross-contact:</strong> Ask if frying oil, griddles, or utensils are shared with your allergen.</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-300 text-xs text-rose-900 font-bold flex items-start gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Personal Medication:</strong> Always carry your prescribed personal emergency medications (such as antihistamines or auto-injectors) according to your healthcare professional's guidance.
+                </p>
+              </div>
+
+              <p className="text-[11px] text-[#7A421F] italic text-center font-medium">
+                Disclaimer: Travel planning constraint only — TravelMind AI does NOT provide medical diagnosis or claim that restaurants are 100% allergy-safe.
+              </p>
+            </div>
+          </div>
+        );
+      }
+
+      // Step 14: Climate
+      case 14: {
         const climates = [
           { id: 'Sunny', label: 'Sunny & Warm', icon: 'sun' },
           { id: 'Mild', label: 'Mild & Temperate', icon: 'sun' },
@@ -736,8 +1038,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 14: Activities
-      case 14: {
+      // Step 15: Activities
+      case 15: {
         const activityList = [
           { id: 'Photography', label: 'Photography', icon: 'camera' },
           { id: 'Trekking', label: 'Trekking & Hiking', icon: 'mountain' },
@@ -785,8 +1087,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 15: Places to Avoid
-      case 15: {
+      // Step 16: Places to Avoid
+      case 16: {
         const avoidList = [
           { id: 'None', label: 'None (Open to all spots)' },
           { id: 'Crowded Places', label: 'Crowded Places' },
@@ -837,8 +1139,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 16: Travel Distance Radius
-      case 16: {
+      // Step 17: Travel Distance Radius
+      case 17: {
         const dists = [
           { id: '50 km or less', label: 'Nearby (Within 50 km)', sub: 'Stay closely inside city / district center' },
           { id: '50–150 km', label: 'Short Trip (50–150 km)', sub: 'Covers whole district & immediate valley' },
@@ -875,8 +1177,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 17: Travel Pace
-      case 17: {
+      // Step 18: Travel Pace
+      case 18: {
         const paces = [
           { id: 'Relaxed', label: 'Relaxed Pace', sub: '1-2 leisurely sights per day with ample tea breaks' },
           { id: 'Balanced', label: 'Balanced Pace', sub: '2-3 sights per day with comfortable timing' },
@@ -913,8 +1215,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 18: Accommodation
-      case 18: {
+      // Step 19: Accommodation
+      case 19: {
         const stays = [
           { id: 'Hotel', label: 'Comfort Hotel', icon: 'hotel' },
           { id: 'Homestay', label: 'Traditional Homestay', icon: 'hotel' },
@@ -951,8 +1253,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 19: Transport Preference
-      case 19: {
+      // Step 20: Transport Preference
+      case 20: {
         const transports = [
           { id: 'Car / Taxi', label: 'Private Car / Cab', icon: 'car' },
           { id: 'Train', label: 'Train & Rail Express', icon: 'train' },
@@ -989,8 +1291,8 @@ export const QuestionnaireSteps: React.FC<QuestionnaireStepProps> = ({
         );
       }
 
-      // Step 20: Packing Preferences
-      case 20: {
+      // Step 21: Packing Preferences
+      case 21: {
         const packOptions = [
           { id: 'Basic Essentials', label: 'Basic Essentials & Travel ID' },
           { id: 'Hill / Cold Destination', label: 'Hill Station / Cold Warmers' },

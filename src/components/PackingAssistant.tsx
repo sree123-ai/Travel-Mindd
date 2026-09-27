@@ -9,7 +9,10 @@ import {
   CheckCircle2, 
   Package, 
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  CloudRain,
+  Sun,
+  AlertTriangle
 } from 'lucide-react';
 import { TripContext, PackingItem } from '../types/travel';
 import { generateContextualPacking } from '../services/travelEngines';
@@ -100,6 +103,27 @@ export const PackingAssistant: React.FC<PackingAssistantProps> = ({
             />
           </div>
         </div>
+
+        {/* Live Weather Adaptive Advisory */}
+        {tripContext.live_weather?.alertMessage && (
+          <div className={`mt-4 p-3.5 rounded-2xl border-2 flex items-start gap-2.5 ${
+            tripContext.live_weather.severity === 'alert'
+              ? 'bg-blue-50 border-blue-500 text-blue-950'
+              : 'bg-amber-50 border-amber-500 text-amber-950'
+          }`}>
+            <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${
+              tripContext.live_weather.severity === 'alert' ? 'text-blue-600' : 'text-amber-600'
+            }`} />
+            <div className="text-xs font-semibold">
+              <span className="font-extrabold block">
+                {tripContext.live_weather.alertMessage}
+              </span>
+              <span className="text-[11px] text-[#7A421F]">
+                Weather essentials have been automatically prioritized in your packing list below.
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Categories & Interactive Checkboxes */}

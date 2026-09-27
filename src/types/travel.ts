@@ -11,6 +11,9 @@ export interface VerifiedPlace {
   placeId: string;
   formattedAddress: string;
   imageUrl: string;
+  imageSource?: string;
+  imageAttribution?: string;
+  exactImageVerified?: boolean;
   rating: number;
   tags: string[];
   bestSeason: string;
@@ -23,6 +26,20 @@ export interface VerifiedPlace {
   crowdLevel: 'Low' | 'Medium' | 'High';
   walkingIntensity: 'Low' | 'Moderate' | 'High';
   landmark3DModelUrl?: string; // Optional glTF/GLB
+  officialBookingUrl?: string;
+  officialBookingName?: string;
+  hasOfficialBooking?: boolean;
+  officialBookingNotes?: string;
+  safetyAlert?: {
+    active: boolean;
+    type: string;
+    severity: 'Advisory' | 'Moderate' | 'Severe';
+    headline: string;
+    description: string;
+    affectedArea: string;
+    source: string;
+    lastUpdated: string;
+  };
 }
 
 export interface PackingItem {
@@ -78,6 +95,9 @@ export interface TripContext {
   // Health, dietary & climate
   health_accessibility: string[];
   food_preferences: string[];
+  allergies: string[];
+  custom_allergies: string[];
+  customAllergies?: string[];
   selected_climate: string;
   activities: string[];
   places_to_avoid: string[];
@@ -99,6 +119,22 @@ export interface TripContext {
   // Dynamic features
   packing_list: PackingItem[];
   itinerary: ItineraryDay[];
+  allergy_food_recommendations?: {
+    suitable_places: { name: string; type: string; specialty: string; address: string; safeOptions: string[] }[];
+    suitable_dishes: { name: string; description: string; whySafe: string }[];
+    caution_dishes: { name: string; reason: string; ingredientsToWatch: string[] }[];
+    precautions: string[];
+  };
+  destination_safety_alert?: {
+    active: boolean;
+    type: string;
+    severity: 'Advisory' | 'Moderate' | 'Severe';
+    headline: string;
+    description: string;
+    affectedArea: string;
+    source: string;
+    lastUpdated: string;
+  };
   live_weather?: {
     tempC: number;
     condition: string;
@@ -107,6 +143,10 @@ export interface TripContext {
     feelsLikeC: number;
     rainProbability: number;
     isLive: boolean;
+    rainTiming?: string;
+    alertMessage?: string;
+    weatherSuggestions?: string[];
+    severity?: 'normal' | 'info' | 'warning' | 'alert';
   };
 }
 

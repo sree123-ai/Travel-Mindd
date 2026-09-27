@@ -10,6 +10,7 @@ import {
   ArrowLeft, 
   Sparkles,
   ShieldCheck,
+  ShieldAlert,
   Footprints
 } from 'lucide-react';
 import { TripContext } from '../types/travel';
@@ -41,7 +42,12 @@ export const ReviewAnswers: React.FC<ReviewAnswersProps> = ({
     { label: "Activities", value: tripContext.activities.join(', '), icon: Sparkles },
     { label: "Places to Avoid", value: tripContext.places_to_avoid.join(', '), icon: ShieldCheck },
     { label: "Health & Accessibility", value: tripContext.health_accessibility.join(', '), icon: Footprints },
-    { label: "Food & Allergies", value: tripContext.food_preferences.join(', '), icon: ShieldCheck },
+    { label: "Food Preferences", value: (tripContext.food_preferences || []).join(', ') || 'No restrictions', icon: ShieldCheck },
+    { 
+      label: "Allergies & Custom Sensitivities", 
+      value: [...(tripContext.allergies || []), ...(tripContext.custom_allergies || [])].filter(Boolean).join(', ') || 'No Known Allergies', 
+      icon: ShieldAlert 
+    },
     { label: "Travel Pace", value: tripContext.travel_pace, icon: Clock },
     { label: "Preferred Transport", value: tripContext.transport_preference, icon: ArrowRight },
     { label: "Accommodation", value: tripContext.accommodation_preference, icon: Sparkles }

@@ -20,6 +20,10 @@ export async function askTravelMindAI(
   const dest = tripContext.verified_destination;
   const lang = tripContext.preferred_language || 'en';
 
+  const allAllergies = [...(tripContext.allergies || []), ...(tripContext.custom_allergies || [])].filter(
+    a => a && a !== 'No Known Allergies' && a !== 'No restrictions'
+  );
+
   const systemPrompt = `You are TRAVELMIND AI, an expert, enthusiastic, and highly knowledgeable tourism and personalized travel planning assistant.
 You possess complete awareness of the user's trip context:
 - Destination: ${dest?.name || tripContext.selected_destination_input || 'Unspecified'} (${dest?.district || tripContext.selected_district}, ${dest?.state || tripContext.selected_state})
@@ -34,7 +38,8 @@ You possess complete awareness of the user's trip context:
 - Activities: ${tripContext.activities?.join(', ')}
 - Places to Avoid: ${tripContext.places_to_avoid?.join(', ')}
 - Health & Accessibility: ${tripContext.health_accessibility?.join(', ')}
-- Dietary / Allergies: ${tripContext.food_preferences?.join(', ')}
+- Food Preferences: ${(tripContext.food_preferences || []).join(', ') || 'No restrictions'}
+- Declared Allergies & Sensitivities: ${allAllergies.length > 0 ? allAllergies.join(', ') : 'No Known Allergies'}
 - Travel Pace: ${tripContext.travel_pace}
 - Transport: ${tripContext.transport_preference}
 - Total Packing Items: ${tripContext.packing_list.length}, Packed: ${tripContext.packing_list.filter(p => p.packed).length}
@@ -42,9 +47,10 @@ You possess complete awareness of the user's trip context:
 CRITICAL RULES:
 1. NEVER invent fake attractions or hallucinate coordinates. Ground your recommendations strictly within ${dest?.district || tripContext.selected_district}, ${dest?.state || tripContext.selected_state}.
 2. Respond in the user's preferred language code: "${lang}" (if 'ta' reply in Tamil, 'hi' in Hindi, 'te' in Telugu, 'ml' in Malayalam, 'kn' in Kannada, 'en' in English).
-3. If asked about packing, refer to their actual packing list count and specific weather requirements.
-4. For health or allergy queries, remind users to follow their healthcare professional's advice and carry necessary personal emergency medication.
-5. Keep answers friendly, structured with bullet points where helpful, and engaging like a personal travel journal guide.`;
+3. Connect DESTINATION + FOOD + ALLERGY when answering culinary questions: specify safe local dishes, foods requiring caution, and restaurant precautions for ${dest?.name || tripContext.selected_district}.
+4. If asked about packing, refer to their actual packing list count and specific weather requirements.
+5. For health or allergy queries, remind users to follow their healthcare professional's advice, check ingredients, inform staff, and carry necessary personal emergency medication.
+6. Keep answers friendly, structured with bullet points where helpful, and engaging like a personal travel journal guide.`;
 
   try {
     const ai = getAiClient();
@@ -98,10 +104,14 @@ ${day ? day.activities.map(a => `• **${a.timeSlot}**: ${a.title} (${a.location
 Enjoy a ${tripContext.travel_pace.toLowerCase()} pace suited to your group!`;
   }
 
-  if (q.includes('eat') || q.includes('food') || q.includes('restaurant')) {
-    const avoid = tripContext.food_preferences.filter(f => f.includes('Avoid') || f.includes('free'));
-    return `🍛 **Culinary Recommendations in ${dest?.city || dest?.district}**:
-Enjoy regional specialties! ${avoid.length > 0 ? `We have flagged your dietary requirements (${avoid.join(', ')}). Always request the restaurant kitchen to prepare fresh dishes without these ingredients.` : 'Savor authentic freshly cooked regional delicacies, filter coffee, and traditional thalis.'}`;
+  if (q.includes('eat') || q.includes('food') || q.includes('restaurant') || q.includes('allergy')) {
+    const allergyList = allAllergies.length > 0 ? allAllergies.join(', ') : 'None declared';
+    const distName = dest?.district || tripContext.selected_district;
+    return `🍛 **Allergy-Aware Dining in ${dest?.name || distName} (${distName}, ${dest?.state || tripContext.selected_state})**:
+• **Declared Allergies**: ${allergyList}
+• **Dietary Style**: ${(tripContext.food_preferences || []).join(', ') || 'Regional'}
+• **Dining Guidance**: Request dishes prepared in clean pans without ${allergyList !== 'None declared' ? allergyList : 'cross-contact ingredients'}.
+• **Precautions**: Always confirm ingredients with the server and verify whether frying oils or grinding stones are shared with nuts or allergens.`;
   }
 
   return `🌟 Greetings! As your TRAVELMIND AI concierge for **${dest?.name || tripContext.selected_district}**, I'm here to assist with maps, daily itineraries, custom packing needs, local customs, and accessibility tips. Feel free to ask about Day 1 or Day 2 activities, what to carry, or nearby attractions!`;
